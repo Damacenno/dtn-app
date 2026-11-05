@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="650" viewBox="0 0 1000 650" role="img" aria-labelledby="title desc">
+  <title id="title">Arquitetura conceitual do catálogo DTN por NFC</title>
+  <desc id="desc">Usuário interage com o aplicativo React Native, que utiliza catálogo e buffer persistente, troca envelopes NDEF com uma tag NFC e sincroniza opcionalmente com uma API externa.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#334155"/>
+    </marker>
+    <style>
+      .box { fill: #f8fafc; stroke: #334155; stroke-width: 2; rx: 14; }
+      .main { fill: #eef2ff; stroke: #4338ca; }
+      .external { fill: #f1f5f9; stroke: #475569; stroke-dasharray: 8 5; }
+      .title { font: 700 20px Arial, sans-serif; fill: #0f172a; }
+      .text { font: 15px Arial, sans-serif; fill: #334155; }
+      .label { font: 13px Arial, sans-serif; fill: #475569; }
+      .arrow { stroke: #334155; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .twoway { stroke: #334155; stroke-width: 2.5; fill: none; marker-start: url(#arrow); marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="1000" height="650" fill="#ffffff"/>
+  <text x="500" y="38" text-anchor="middle" class="title">Arquitetura conceitual do sistema DTN por NFC</text>
+
+  <rect x="355" y="70" width="290" height="72" class="box"/>
+  <text x="500" y="100" text-anchor="middle" class="title">Usuário</text>
+  <text x="500" y="124" text-anchor="middle" class="text">Seleciona mensagens e aproxima o dispositivo</text>
+
+  <rect x="305" y="185" width="390" height="92" class="box main"/>
+  <text x="500" y="217" text-anchor="middle" class="title">Aplicativo móvel · React Native</text>
+  <text x="500" y="243" text-anchor="middle" class="text">Interface, estado da operação e coordenação dos serviços</text>
+  <text x="500" y="263" text-anchor="middle" class="label">App.tsx</text>
+
+  <rect x="55" y="345" width="250" height="108" class="box"/>
+  <text x="180" y="378" text-anchor="middle" class="title">Catálogo e modelo</text>
+  <text x="180" y="405" text-anchor="middle" class="text">Códigos de mensagens</text>
+  <text x="180" y="429" text-anchor="middle" class="label">messageCatalog · Message</text>
+
+  <rect x="375" y="345" width="250" height="108" class="box main"/>
+  <text x="500" y="378" text-anchor="middle" class="title">Buffer persistente local</text>
+  <text x="500" y="405" text-anchor="middle" class="text">Mensagens, IDs entregues e cursor</text>
+  <text x="500" y="429" text-anchor="middle" class="label">AsyncStorage</text>
+
+  <rect x="695" y="345" width="250" height="108" class="box"/>
+  <text x="820" y="378" text-anchor="middle" class="title">Protocolo e serviço NFC</text>
+  <text x="820" y="405" text-anchor="middle" class="text">Envelope NDEF, merge e capacidade</text>
+  <text x="820" y="429" text-anchor="middle" class="label">nfcProtocol · nfcService</text>
+
+  <rect x="695" y="535" width="250" height="78" class="box"/>
+  <text x="820" y="566" text-anchor="middle" class="title">TAG NFC</text>
+  <text x="820" y="590" text-anchor="middle" class="text">Armazenamento temporário portátil</text>
+
+  <rect x="55" y="535" width="250" height="78" class="box external"/>
+  <text x="180" y="566" text-anchor="middle" class="title">API DTN externa</text>
+  <text x="180" y="590" text-anchor="middle" class="text">Sincronização HTTP e IDs entregues</text>
+
+  <path d="M500 142 L500 182" class="arrow"/>
+  <path d="M390 277 L230 341" class="arrow"/>
+  <path d="M500 277 L500 341" class="twoway"/>
+  <path d="M610 277 L770 341" class="twoway"/>
+  <path d="M305 400 L371 400" class="twoway"/>
+  <path d="M625 400 L691 400" class="twoway"/>
+  <path d="M820 453 L820 531" class="twoway"/>
+  <path d="M375 430 C350 490 280 505 230 531" class="twoway"/>
+  <text x="277" y="493" class="label">Internet quando disponível</text>
+  <text x="835" y="500" class="label">Aproximação física</text>
+</svg>

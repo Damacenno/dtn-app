@@ -1,0 +1,9 @@
+node_modules
+android
+ios
+.git
+.gradle
+.idea
+.vscode
+npm-debug.log*
+yarn-debug.log*
