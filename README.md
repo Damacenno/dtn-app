@@ -1,97 +1,197 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# DTN App
 
-# Getting Started
+Aplicativo React Native com suporte para execução em contêiner Docker.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+Este guia foi escrito para novos usuários e mostra o passo a passo completo, desde a preparação do ambiente até a execução do projeto com Docker.
 
-## Step 1: Start Metro
+## Requisitos
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+Antes de começar, instale os itens abaixo:
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+- Git
+- Docker Desktop (Windows/macOS) ou Docker Engine (Linux)
+- Node.js 22.11 ou superior (opcional, caso queira rodar comandos locais fora do contêiner)
+- Editor de código como VS Code
 
-```sh
-# Using npm
-npm start
+> Recomendado: no Windows, ative o WSL 2 para melhor compatibilidade com o Docker.
 
-# OR using Yarn
-yarn start
+## 1. Clone o repositório
+
+Abra o terminal e execute:
+
+```bash
+git clone https://github.com/Damacenno/dtn-app.git
+cd dtn-app
 ```
 
-## Step 2: Build and run your app
+Se você já tiver o projeto em pasta local, basta entrar na pasta:
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+```bash
+cd caminho/para/o/projeto
+```
+
+## 2. Verifique a estrutura do projeto
+
+Na raiz do projeto, você deve encontrar arquivos como:
+
+- `package.json`
+- `docker-compose.yml`
+- `docker/`
+- `src/`
+- `App.tsx`
+
+O arquivo `docker-compose.yml` já está configurado para subir o ambiente do React Native.
+
+## 3. Inicie o Docker
+
+Certifique-se de que o Docker esteja em execução:
+
+- Windows/macOS: abra o Docker Desktop e aguarde o ícone ficar ativo
+- Linux: verifique se o daemon do Docker está iniciado
+
+## 4. Suba o ambiente com Docker Compose
+
+Na raiz do projeto, execute:
+
+```bash
+docker compose up --build
+```
+
+Esse comando irá:
+
+- construir a imagem do contêiner
+- instalar as dependências do projeto
+- iniciar o Metro Bundler do React Native
+- expor a porta `8081`
+
+## 5. Acesse o Metro
+
+Após o comando iniciar corretamente, o projeto ficará disponível no endereço:
+
+```text
+http://localhost:8081
+```
+
+Esse endereço é usado pelo Metro Bundler para servir o código JavaScript do app.
+
+## 6. Execute o app em um emulador ou dispositivo
+
+O contêiner configurado neste projeto inicia o Metro, mas a execução real do app depende do ambiente em que você está trabalhando:
 
 ### Android
 
-```sh
-# Using npm
-npm run android
+Se você tiver um emulador Android ou um dispositivo conectado:
 
-# OR using Yarn
-yarn android
+```bash
+npm run android
 ```
+
+> Se o ambiente local não estiver configurado para Android, siga a documentação oficial do React Native para instalar Android SDK, SDK Tools e variáveis de ambiente.
 
 ### iOS
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+Para iOS, é necessário um ambiente macOS com Xcode instalado:
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+```bash
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## 7. Comandos úteis
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+### Reiniciar o ambiente
 
-## Step 3: Modify your app
+```bash
+docker compose down
+docker compose up --build
+```
 
-Now that you have successfully run the app, let's make changes!
+### Ver logs do contêiner
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+```bash
+docker compose logs -f
+```
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+### Parar os containers
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+```bash
+docker compose down
+```
 
-## Congratulations! :tada:
+### Rebuild sem cache
 
-You've successfully run and modified your React Native App. :partying_face:
+```bash
+docker compose build --no-cache
+```
 
-### Now what?
+## 8. Estrutura de execução do Docker
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+O projeto usa o arquivo `docker-compose.yml`, que define o serviço `react-native` com:
 
-# Troubleshooting
+- build do Dockerfile em `docker/react-native/Dockerfile`
+- volume do projeto montado em `/app`
+- volume para `node_modules`
+- porta `8081:8081`
+- comando de inicialização do Metro
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+Isso facilita o desenvolvimento em qualquer máquina com Docker, sem necessidade de configurar o ambiente do Node manualmente em cada máquina.
 
-# Learn More
+## 9. Solução de problemas comuns
 
-To learn more about React Native, take a look at the following resources:
+### Erro: Docker não inicia
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- verifique se o Docker Desktop está rodando
+- reinicie o serviço do Docker
+- no Windows, verifique se o WSL 2 está habilitado
+
+### Erro: porta 8081 em uso
+
+- verifique se outra aplicação já está usando a porta `8081`
+- pare o processo conflitante ou altere a porta no arquivo `docker-compose.yml`
+
+### Erro de dependências
+
+Se o contêiner falhar ao instalar pacotes, execute:
+
+```bash
+docker compose up --build --force-recreate
+```
+
+### O projeto não abre no emulador
+
+- confirme que o Metro está rodando em `http://localhost:8081`
+- verifique se o emulador ou dispositivo está conectado e pronto
+- confirme se o ambiente Android/iOS está corretamente configurado no computador
+
+## 10. Próximo passo
+
+Depois que o projeto subir com sucesso, você pode começar a editar os arquivos em `src/` e `App.tsx`. O Metro faz atualização automática quando os arquivos são salvos.
+
+Se quiser, também pode rodar os comandos locais diretamente:
+
+```bash
+npm install
+npm start
+```
+
+Mas para novos usuários, a forma mais simples e padronizada é usar o Docker:
+
+```bash
+docker compose up --build
+```
+
+## Resumo rápido
+
+```bash
+git clone https://github.com/Damacenno/dtn-app.git
+cd dtn-app
+docker compose up --build
+```
+
+Acesse:
+
+```text
+http://localhost:8081
+```
+
+Pronto. O ambiente do projeto foi iniciado com Docker.
+
