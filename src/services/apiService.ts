@@ -8,6 +8,7 @@ import {
 } from '../database/messageStorage';
 
 const API_BASE_URL = 'http://192.168.1.2:8000/api';
+const REQUEST_TIMEOUT = 5000;
 
 interface ApiSyncResponse {
     success: boolean;
@@ -32,6 +33,34 @@ function getMessagePayload(message: Message) {
     };
 }
 
+async function fetchWithTimeout(
+    url: string,
+    options: RequestInit
+): Promise<Response> {
+    const controller = new AbortController();
+
+    const timeout = setTimeout(() => {
+        controller.abort();
+    }, REQUEST_TIMEOUT);
+
+    try {
+        return await fetch(url, {
+            ...options,
+            signal: controller.signal,
+        });
+    } catch (error: any) {
+        if (error?.name === 'AbortError') {
+            throw new Error('Tempo limite da conexão com a API excedido.');
+        }
+
+        throw new Error(
+            error?.message || 'Não foi possível conectar à API.'
+        );
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
 export async function synchronizeWithApi(
     deviceId: string,
     messages: Message[]
@@ -41,18 +70,21 @@ export async function synchronizeWithApi(
     console.log('[API] Mensagens para enviar:', messages.length);
     console.log('[API] URL:', `${API_BASE_URL}/dtn/sync`);
 
-    const response = await fetch(`${API_BASE_URL}/dtn/sync`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-        },
-        body: JSON.stringify({
-            device_id: deviceId,
-            messages: messages.map(getMessagePayload),
-            known_ids: messages.map(message => message.id),
-        }),
-    });
+    const response = await fetchWithTimeout(
+        `${API_BASE_URL}/dtn/sync`,
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            },
+            body: JSON.stringify({
+                device_id: deviceId,
+                messages: messages.map(getMessagePayload),
+                known_ids: messages.map(message => message.id),
+            }),
+        }
+    );
 
     console.log('[API] Status HTTP:', response.status);
 
@@ -82,7 +114,7 @@ export async function refreshDeliveredCacheFromApi(): Promise<number> {
 
         console.log('[CACHE] Atualizando cache:', url);
 
-        const response = await fetch(url, {
+        const response = await fetchWithTimeout(url, {
             method: 'GET',
             headers: {
                 Accept: 'application/json',

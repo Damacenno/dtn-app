@@ -93,44 +93,18 @@ export async function synchronizeWithTag(
 
     let deliveredCache = await getDeliveredIds();
 
-    const localPendingMessages = validLocalMessages.filter(
-        message => !deliveredCache.has(message.id)
+    const localIds = new Set(
+        validLocalMessages.map(message => message.id)
     );
-
-    if (localPendingMessages.length > 0) {
-        try {
-            console.log(
-                '[API] Enviando mensagens locais antes da leitura NFC:',
-                localPendingMessages.length
-            );
-
-            const apiResult = await synchronizeWithApi(
-                deviceId,
-                localPendingMessages
-            );
-
-            deliveredIds = apiResult.delivered_ids;
-            apiAvailable = true;
-
-        } catch (error: any) {
-            apiError =
-                error?.message || 'API indisponível.';
-
-            console.warn(
-                '[API] Não foi possível enviar mensagens locais:',
-                apiError
-            );
-        }
-    }
-
-    deliveredCache = await getDeliveredIds();
 
     let requestAttempted = false;
 
     try {
-        await NfcManager.start();
+        console.log('[NFC] Iniciando leitura da TAG.');
 
+        await NfcManager.start();
         await NfcManager.requestTechnology(NfcTech.Ndef);
+
         requestAttempted = true;
 
         const tag = await NfcManager.getTag();
@@ -164,28 +138,35 @@ export async function synchronizeWithTag(
         expiredCount =
             originalTagMessages.length - validTagMessages.length;
 
+        const tagIds = new Set(
+            validTagMessages.map(message => message.id)
+        );
+
         merged = mergeMessages(
             validLocalMessages,
             validTagMessages
         );
 
-        const messagesToKeep = merged.filter(
-            message => !deliveredCache.has(message.id)
-        );
+        const messagesToKeep = merged.filter(message => {
+            const isLocal = localIds.has(message.id);
+            const cameFromTag = tagIds.has(message.id);
+            const wasDelivered = deliveredCache.has(message.id);
 
-        const localIds = new Set(
-            validLocalMessages
-                .filter(message => !deliveredCache.has(message.id))
-                .map(message => message.id)
-        );
+            if (isLocal) {
+                return true;
+            }
 
-        const status =
-            await NfcManager.ndefHandler.getNdefStatus();
+            if (cameFromTag && wasDelivered) {
+                return false;
+            }
+
+            return true;
+        });
 
         const selected = selectMessagesForTag(
             messagesToKeep,
             pointId,
-            status.capacity,
+            (await NfcManager.ndefHandler.getNdefStatus()).capacity,
             localIds
         );
 
@@ -193,8 +174,19 @@ export async function synchronizeWithTag(
             selected.map(message => message.id)
         );
 
+        const omittedLocalMessages = validLocalMessages.filter(
+            message => !selectedIds.has(message.id)
+        );
+
+        if (omittedLocalMessages.length > 0) {
+            throw new Error(
+                'A TAG não tem espaço para armazenar todas as mensagens locais. Os dados existentes foram preservados.'
+            );
+        }
+
         const omittedTagMessages = validTagMessages.filter(
             message =>
+                !localIds.has(message.id) &&
                 !deliveredCache.has(message.id) &&
                 !selectedIds.has(message.id)
         );
@@ -204,6 +196,9 @@ export async function synchronizeWithTag(
                 'A TAG não tem espaço para preservar todas as mensagens pendentes. Os dados existentes foram preservados.'
             );
         }
+
+        const status =
+            await NfcManager.ndefHandler.getNdefStatus();
 
         const encoded = encodeEnvelope(
             pointId,
@@ -235,12 +230,13 @@ export async function synchronizeWithTag(
 
         console.log('[NFC] Gravação concluída.');
         console.log('[NFC] Mensagens na TAG:', storedOnTag.length);
-        console.log('[NFC] Mensagens removidas por entrega:',
+        console.log(
+            '[NFC] Mensagens removidas por entrega:',
             merged.length - messagesToKeep.length
         );
 
     } catch (error: any) {
-        if (merged.length === 0 && !requestAttempted) {
+        if (!requestAttempted) {
             throw error;
         }
 
@@ -249,7 +245,12 @@ export async function synchronizeWithTag(
 
         omittedCount = Math.max(
             0,
-            merged.filter(message => !deliveredCache.has(message.id)).length
+            merged.filter(message => {
+                return (
+                    localIds.has(message.id) ||
+                    !deliveredCache.has(message.id)
+                );
+            }).length
         );
 
         console.error('[NFC] Erro ao atualizar TAG:', error);
@@ -260,29 +261,27 @@ export async function synchronizeWithTag(
         }
     }
 
-    const messagesNotDelivered = merged.filter(
+    const messagesToSync = merged.filter(
         message => !deliveredCache.has(message.id)
     );
 
-    if (messagesNotDelivered.length > 0) {
+    console.log('[API] Mensagens disponíveis para envio:', merged.length);
+    console.log('[API] Mensagens pendentes:', messagesToSync.length);
+    console.log('[API] IDs pendentes:', messagesToSync.map(message => message.id));
+
+    if (messagesToSync.length > 0) {
         try {
             console.log(
-                '[API] Enviando mensagens recebidas da TAG:',
-                messagesNotDelivered.length
+                '[API] Enviando mensagens após sincronização NFC:',
+                messagesToSync.length
             );
-
+            console.log('[API] Iniciando POST /dtn/sync');
             const apiResult = await synchronizeWithApi(
                 deviceId,
-                messagesNotDelivered
+                messagesToSync
             );
 
-            deliveredIds = Array.from(
-                new Set([
-                    ...deliveredIds,
-                    ...apiResult.delivered_ids,
-                ])
-            );
-
+            deliveredIds = apiResult.delivered_ids;
             apiAvailable = true;
 
         } catch (error: any) {
@@ -290,7 +289,7 @@ export async function synchronizeWithTag(
                 error?.message || 'API indisponível.';
 
             console.warn(
-                '[API] Não foi possível enviar mensagens da TAG:',
+                '[API] Não foi possível sincronizar:',
                 apiError
             );
         }
